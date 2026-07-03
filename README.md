@@ -1,88 +1,125 @@
-<img src="Support/Brand/AppIcon-master.png" alt="Unbroken" width="128">
+<div align="center">
+
+<img src="Support/Brand/AppIcon-master.png" alt="Unbroken" width="120">
 
 # Unbroken
 
-A free, open-source macOS habit tracker. Keep your streaks unbroken —
-your flame stays lit, or gutters to orange when the day's running out.
+**Keep the streak. Watch the flame.**
 
-## The idea
+A free, open-source habit tracker that lives in your Mac's menu bar.
+No account, no sync, no subscription — just a flame that stays lit while you
+show up, and turns orange when the day's almost gone and you haven't.
 
-The menu bar icon **is** the product. It sits in your eyeline all day as a
-single flame — your streak, still burning:
+![macOS](https://img.shields.io/badge/macOS-14%2B-000?logo=apple)
+![Swift](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-3E7BC4)
+[![Download](https://img.shields.io/badge/Download-.dmg-F26B21)](https://github.com/CyberVerse2/unbroken/releases/latest)
 
-| State | Icon |
+<img src="docs/screenshots/popover.png" alt="The Unbroken popover" width="360">
+
+</div>
+
+## Why it exists
+
+Most habit apps are a separate place you have to remember to open. The whole
+point of a streak is that it's *always on your mind* — so Unbroken puts it
+where your eyes already are, in the menu bar, all day.
+
+The icon **is** the app. One glance tells you where you stand:
+
+| The flame | What it means |
 |---|---|
-| No habits yet | faint flame outline |
-| Nothing done today | hollow flame outline |
-| Partway there | flame filling from the base |
-| Everything done | solid flame |
-| Day ending, habits unfinished | **hot orange flame** |
+| 🔥 faint outline | no habits yet |
+| 🔥 hollow | a fresh day, nothing done |
+| 🔥 filling up | some done, keep going |
+| 🔥 solid | everything's done — you're good |
+| 🔥 **orange** | day's ending and you're not done — don't break it |
 
-You check in with one click from the popover. Miss a day and the streak dies —
-strict daily, with two mercies: the logical day ends at 3 AM (a 12:30 AM
-check-in still counts for "today"), and you can backfill yesterday, but nothing
-older.
+Click it, check in, done. No streak-shaming, no notifications begging for
+your attention — just a quiet flame that you don't want to let go out.
 
-## Surfaces
+## Download
 
-- **Menu bar popover** — the daily glance and one-click check-in.
-- **Main window** — per-habit history grids (GitHub-contributions style),
-  streak stats, reordering, and settings. Open it from the popover header.
-- **`unbroken` CLI** — check in from a terminal or script (see below).
-- **Widget** — WidgetKit small + medium. Built and bundled, but macOS only
-  surfaces widgets from Developer-ID-signed apps; an ad-hoc build like this
-  won't appear in the gallery until it's properly signed. See
-  [Widget status](#widget-status).
+Grab the latest **[`Unbroken.dmg`](https://github.com/CyberVerse2/unbroken/releases/latest)**,
+drag it to Applications, and it lives in your menu bar.
+
+> **First launch:** the app is open-source and signed ad-hoc (not through a
+> paid Apple Developer account), so macOS will warn you it's from an
+> "unidentified developer." Right-click the app → **Open** → **Open** once, and
+> you're set. Or [build it yourself](#build-from-source) — it's a plain Swift
+> package.
+
+## What you get
+
+- **One-click check-ins** from a menu bar popover, with a quick onboarding that
+  gets you a first habit in seconds.
+- **A real history view** — GitHub-contributions-style grids for every habit,
+  current streak, best streak, and totals.
+
+<div align="center">
+<img src="docs/screenshots/window.png" alt="History grids in the main window" width="620">
+</div>
+
+- **Streaks that are honest but not cruel.** Strict daily, with two mercies:
+  - The day rolls over at **3 AM**, not midnight — a 12:30 AM check-in still
+    counts for "today."
+  - You can **backfill yesterday** if you forgot, but nothing older. No
+    rewriting history.
+- **A `unbroken` CLI** so you can check in from a terminal or a script.
+- **Widget** (WidgetKit small + medium) built in — see the [note below](#widget).
+- **Yours, locally.** One JSON file on your disk. No account, no cloud, no
+  analytics, nothing leaves your Mac.
 
 ## The CLI
 
+Check in without touching the mouse — great for shell prompts and scripts.
+
 ```sh
-make cli                 # builds dist/unbroken
-cp dist/unbroken /usr/local/bin/   # put it on your PATH
+make cli                            # builds dist/unbroken
+cp dist/unbroken /usr/local/bin/    # put it on your PATH
 
 unbroken                 # list habits with today's status + streaks
-unbroken done read       # check in "Read…" today (prefix or emoji match)
+unbroken done read       # check in "Read…" (matches by name prefix or emoji)
 unbroken done gym --yesterday
 unbroken undo read
-unbroken status          # "2/4 done · at risk" — exit 0 only when all done
+unbroken status          # "2/4 done · at risk" — exits 0 only when all done
 ```
 
-Check-ins land in the same store as the app (`source: .cli`), and the running
-app picks them up live — a terminal `unbroken done` lights up the menu bar flame
-within a heartbeat. `unbroken status` is designed for shell prompts and scripts.
+Everything lands in the same file the app reads, and the running app picks it
+up live — a terminal `unbroken done` lights up the menu bar flame within a
+heartbeat.
 
-## Design principles
+Because every check-in carries a `source` the streak engine never inspects,
+anything can feed a streak — the CLI today, Shortcuts, a git-commit hook, or a
+webhook tomorrow — without special-casing the streak logic.
 
-- **Local only.** One JSON file in `~/Library/Application Support/Unbroken/`.
-  No accounts, no sync, no telemetry. The app, CLI, and widget all read it.
-- **Manual today, anything tomorrow.** Every check-in is an `Entry` with a
-  `source`. The streak engine never looks at the source — so the CLI, Shortcuts
-  actions, git-commit watchers, and webhooks all feed streaks without touching
-  streak logic.
+## Build from source
 
-## Build
-
-Requires Xcode 16+ command line tools (Swift 6).
+Needs the Xcode 16+ command line tools (Swift 6). No `.xcodeproj` — it's a
+plain Swift package.
 
 ```sh
-make test    # run the engine test suite (49 tests)
-make app     # build dist/Unbroken.app (menu bar + window + embedded widget)
-make cli     # build dist/unbroken
-make run     # build and launch the app
+make test    # run the engine test suite
+make app     # build dist/Unbroken.app (menu bar + window + widget)
+make run     # build and launch
 ```
 
-There is no `.xcodeproj` — it's a plain Swift package. `make app` assembles
-and ad-hoc-signs the bundle.
+`make app` assembles and ad-hoc-signs the bundle for local use.
 
-## Widget status
+## Widget
 
-The widget is real WidgetKit code (small + medium), packaged as a valid,
-codesign-verified `.appex` inside the app bundle. But macOS's plugin daemon
-refuses to register widget extensions from **ad-hoc-signed** host apps, so it
-won't show up in the widget gallery from a `make app` build. A Developer ID
-certificate + provisioning profile is the only unlock; the code and packaging
-are already in place for when that's available.
+The widget is real, working WidgetKit code, packaged as a valid, signed
+`.appex` inside the app. The catch: macOS refuses to register widgets from
+ad-hoc-signed apps, so it won't appear in the widget gallery from a `make app`
+build. A paid Apple Developer ID is the only unlock — the code and packaging
+are already in place for whenever that happens.
+
+## Contributing
+
+Issues and pull requests are welcome. The streak logic lives in
+`Sources/UnbrokenCore` and is covered by tests — if you touch it, keep them
+green (`make test`).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — do what you like with it. See [LICENSE](LICENSE).
