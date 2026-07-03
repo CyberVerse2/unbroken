@@ -4,7 +4,7 @@
 
 # Unbroken
 
-**Keep the streak. Watch the flame.**
+**Keep the streak going.**
 
 A free, open-source habit tracker that lives in your Mac's menu bar.
 No account, no sync, no subscription — just a flame that stays lit while you
