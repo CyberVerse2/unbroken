@@ -89,6 +89,12 @@ UserDefaults.standard.set(false, forKey: AppPrefs.didCheckInOnce)
 
 let clock = AppClock()
 let store = seedStore()
+// Today's 3 so the dashboard render shows the focus card populated.
+store.setFocus([
+    FocusItem(text: "Ship the onboarding flow", done: true),
+    FocusItem(text: "Call the dentist", done: false),
+    FocusItem(text: "30 min deep work, no phone", done: false),
+], asOf: Date())
 let detailHabit = store.habits.sorted { $0.sortOrder < $1.sortOrder }[0] // long streak
 
 // 1. Onboarding welcome (Spacer-driven — needs a fixed popover height)

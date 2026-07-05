@@ -94,6 +94,35 @@ public struct Entry: Identifiable, Codable, Hashable, Sendable {
     }
 }
 
+/// One of the day's "most important things" — a tiny daily to-do, kept apart
+/// from habits and their streaks. The streak engine never sees these; they exist
+/// so the user can jot the three things that actually matter today and tick them
+/// off. They reset each logical day (see `DailyFocus`).
+public struct FocusItem: Identifiable, Codable, Hashable, Sendable {
+    public var id: UUID
+    public var text: String
+    public var done: Bool
+
+    public init(id: UUID = UUID(), text: String, done: Bool = false) {
+        self.id = id
+        self.text = text
+        self.done = done
+    }
+}
+
+/// The user's top tasks for a single logical day. `day` is a start-of-logical-day
+/// key (see `DaySettings.logicalDay`). Stored per day so the list is blank each
+/// morning while past days stay on record.
+public struct DailyFocus: Codable, Hashable, Sendable {
+    public var day: Date
+    public var items: [FocusItem]
+
+    public init(day: Date, items: [FocusItem]) {
+        self.day = day
+        self.items = items
+    }
+}
+
 /// User-tunable day semantics.
 public struct DaySettings: Codable, Sendable, Equatable {
     /// Hour (0–23) at which the logical day ends. Default 3: a 12:30 AM

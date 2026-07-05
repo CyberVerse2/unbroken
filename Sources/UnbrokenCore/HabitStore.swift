@@ -8,6 +8,8 @@ import Observation
 public final class HabitStore {
     public private(set) var habits: [Habit] = []
     public private(set) var entries: [Entry] = []
+    /// The user's "top things" lists, one entry per logical day that has any.
+    public private(set) var focus: [DailyFocus] = []
     public var settings: DaySettings = DaySettings() {
         didSet { save() }
     }
@@ -34,6 +36,24 @@ public final class HabitStore {
         var habits: [Habit]
         var entries: [Entry]
         var settings: DaySettings
+        var focus: [DailyFocus]
+
+        init(habits: [Habit], entries: [Entry], settings: DaySettings, focus: [DailyFocus]) {
+            self.habits = habits
+            self.entries = entries
+            self.settings = settings
+            self.focus = focus
+        }
+
+        // Tolerant decode: stores written before daily-focus existed have no
+        // `focus` key — default it to empty instead of failing the whole load.
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            habits = try c.decode([Habit].self, forKey: .habits)
+            entries = try c.decode([Entry].self, forKey: .entries)
+            settings = try c.decode(DaySettings.self, forKey: .settings)
+            focus = try c.decodeIfPresent([DailyFocus].self, forKey: .focus) ?? []
+        }
     }
 
     /// Pass a custom URL in tests; nil uses the default App Support location.
@@ -174,6 +194,38 @@ public final class HabitStore {
         return target
     }
 
+    // MARK: Daily focus
+
+    /// The "top things" for the logical day containing `asOf` (empty if none set).
+    public func focusItems(asOf: Date = .now) -> [FocusItem] {
+        let key = focusKey(asOf: asOf)
+        return focus.first { Calendar.current.startOfDay(for: $0.day) == key }?.items ?? []
+    }
+
+    /// Replace today's focus list (at most three items). Blank slots are kept so
+    /// a later checked item never jumps position, but a day with no text at all
+    /// is dropped entirely so the store never accumulates empty entries. Only the
+    /// current logical day is editable — this is a "today" ritual, not a backlog.
+    public func setFocus(_ items: [FocusItem], asOf: Date = .now) {
+        let key = focusKey(asOf: asOf)
+        let cleaned = Array(items.prefix(3)).map { item -> FocusItem in
+            var copy = item
+            copy.text = item.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            if copy.text.isEmpty { copy.done = false } // an empty task can't be "done"
+            return copy
+        }
+        focus.removeAll { Calendar.current.startOfDay(for: $0.day) == key }
+        if cleaned.contains(where: { !$0.text.isEmpty }) {
+            focus.append(DailyFocus(day: key, items: cleaned))
+        }
+        save()
+    }
+
+    /// Start-of-day key for the logical day containing `asOf`.
+    private func focusKey(asOf: Date) -> Date {
+        Calendar.current.startOfDay(for: settings.logicalDay(containing: asOf))
+    }
+
     // MARK: Derived
 
     public func stats(for habit: Habit, asOf: Date = .now) -> StreakStats {
@@ -262,6 +314,7 @@ public final class HabitStore {
         isLoading = true // guard settings.didSet from writing back
         habits = document.habits
         entries = document.entries
+        focus = document.focus
         settings = document.settings
         isLoading = false
         lastWrittenData = data
@@ -278,13 +331,14 @@ public final class HabitStore {
         guard let document = try? JSONDecoder().decode(StoreDocument.self, from: data) else { return }
         habits = document.habits
         entries = document.entries
+        focus = document.focus
         settings = document.settings
         lastWrittenData = data
     }
 
     private func save() {
         guard !isLoading else { return }
-        let document = StoreDocument(habits: habits, entries: entries, settings: settings)
+        let document = StoreDocument(habits: habits, entries: entries, settings: settings, focus: focus)
         do {
             let directory = fileURL.deletingLastPathComponent()
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

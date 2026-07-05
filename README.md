@@ -53,6 +53,9 @@ drag it to Applications, and it lives in your menu bar.
 
 - **One-click check-ins** from a menu bar popover, with a quick onboarding that
   gets you a first habit in seconds.
+- **Today's 3** — jot the three most important things you want to do today and
+  check them off. It's a daily ritual, not a backlog: the list wipes clean each
+  morning and stays separate from your habit streaks.
 - **A real history view** — GitHub-contributions-style grids for every habit,
   current streak, best streak, and totals.
 
@@ -108,11 +111,7 @@ make run     # build and launch
 
 ## Widget
 
-The widget is real, working WidgetKit code, packaged as a valid, signed
-`.appex` inside the app. The catch: macOS refuses to register widgets from
-ad-hoc-signed apps, so it won't appear in the widget gallery from a `make app`
-build. A paid Apple Developer ID is the only unlock — the code and packaging
-are already in place for whenever that happens.
+Coming soon once I get an apple dev acc
 
 ## Contributing
 
