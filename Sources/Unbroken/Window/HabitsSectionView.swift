@@ -36,6 +36,10 @@ struct HabitsSectionView: View {
             header
             if !store.habits.isEmpty { progressBar }
 
+            FocusListCard(store: store, today: today, now: clock.now, interactive: reorderEnabled)
+
+            SectionLabel("Habits").padding(.top, 2)
+
             if store.habits.isEmpty {
                 emptyState
             } else {

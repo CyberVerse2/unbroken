@@ -25,7 +25,20 @@ public enum StreakCalculator {
         for entry in entries where entry.habitID == habit.id {
             days.insert(calendar.startOfDay(for: entry.day))
         }
+        return streak(completedDays: days, asOf: asOf, settings: settings, calendar: calendar)
+    }
 
+    /// Current and best streak over an arbitrary set of completed logical-day
+    /// keys (each a calendar start-of-day). Shared by habit streaks and the
+    /// Today's-3 focus streak so both obey the same rules — including the "today
+    /// isn't over yet" grace: a missing *today* anchors on yesterday instead of
+    /// resetting to zero.
+    static func streak(
+        completedDays days: Set<Date>,
+        asOf: Date,
+        settings: DaySettings,
+        calendar: Calendar
+    ) -> StreakStats {
         guard !days.isEmpty else {
             return StreakStats(current: 0, best: 0, lastCompletedDay: nil)
         }
@@ -68,6 +81,24 @@ public enum StreakCalculator {
         }
 
         return StreakStats(current: current, best: best, lastCompletedDay: days.max())
+    }
+}
+
+/// Streak math for the Today's-3 daily focus list: a day counts when the user
+/// cleared it (see ``DailyFocus/isCleared``). Reuses the same consecutive-day
+/// logic as habit streaks, so the grace rules match.
+public enum FocusStreakCalculator {
+    public static func stats(
+        focus: [DailyFocus],
+        asOf: Date,
+        settings: DaySettings,
+        calendar: Calendar = .current
+    ) -> StreakStats {
+        var days = Set<Date>()
+        for entry in focus where entry.isCleared {
+            days.insert(calendar.startOfDay(for: entry.day))
+        }
+        return StreakCalculator.streak(completedDays: days, asOf: asOf, settings: settings, calendar: calendar)
     }
 }
 

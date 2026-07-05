@@ -80,6 +80,12 @@ let clock = AppClock()
 }
 
 let populated = seedStore()
+// Today's 3 so the window render shows the focus card populated.
+populated.setFocus([
+    FocusItem(text: "Ship the onboarding flow", done: true),
+    FocusItem(text: "Call the dentist", done: false),
+    FocusItem(text: "30 min deep work, no phone", done: false),
+], asOf: Date())
 let empty = HabitStore(
     fileURL: FileManager.default.temporaryDirectory
         .appendingPathComponent("unbroken-windowpreview-empty-\(UUID().uuidString)/store.json")

@@ -24,6 +24,7 @@ app: release
 	cp $(BINARY) $(BUNDLE)/Contents/MacOS/$(APP)
 	cp Support/Info.plist $(BUNDLE)/Contents/
 	cp Support/AppIcon.icns $(BUNDLE)/Contents/Resources/AppIcon.icns
+	cp Support/Brand/AppIcon-master.png $(BUNDLE)/Contents/Resources/AppLogo.png
 	cp Support/Fonts/*.ttf $(BUNDLE)/Contents/Resources/
 	$(MAKE) embed-widget
 	codesign --force --sign - $(BUNDLE)

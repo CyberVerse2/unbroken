@@ -121,6 +121,17 @@ public struct DailyFocus: Codable, Hashable, Sendable {
         self.day = day
         self.items = items
     }
+
+    /// True when the user wrote at least one task and finished every task they
+    /// wrote. Blank slots (kept to preserve positions) don't count against you —
+    /// clearing your two real items still clears the day. This is the unit the
+    /// focus streak is built from.
+    public var isCleared: Bool {
+        let written = items.filter {
+            !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+        return !written.isEmpty && written.allSatisfy { $0.done }
+    }
 }
 
 /// User-tunable day semantics.

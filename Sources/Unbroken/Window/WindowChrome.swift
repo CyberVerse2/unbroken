@@ -47,28 +47,57 @@ struct FlameShape: Shape {
     }
 }
 
-/// The window's ambient flame mark: a flame that fills from its base by the
-/// day's completion, in the brand accent. Quiet (outline only) when nothing's
-/// done, fully lit when the day is complete. Drawn in a `Canvas` so it renders
-/// faithfully to PNG in the preview harness.
+/// The window's brand mark — the actual Unbroken flame logo. Shows the app's
+/// real icon image (the same flame the Dock/menu bar and the About screen use),
+/// so the window is branded with the logo, not a redrawn approximation. The
+/// `done`/`total` are retained for callers but no longer drive a fill — the mark
+/// is the logo, and progress is shown in the adjacent text.
+///
+/// Only when the icon image can't be loaded — the PNG preview harness runs as a
+/// bare executable with no app bundle — does it fall back to the drawn flame, so
+/// previews still render a flame rather than a blank.
 struct WindowFlame: View {
     let done: Int
     let total: Int
     var size: CGFloat = 26
 
-    private var progress: Double { total > 0 ? Double(done) / Double(total) : 0 }
-    private var flameColor: Color {
-        progress > 0 ? Theme.accent : Theme.inkFaint
+    var body: some View {
+        if let logo = BrandLogo.image {
+            Image(nsImage: logo)
+                .resizable()
+                .interpolation(.high)
+                .frame(width: size, height: size)
+                .clipShape(RoundedRectangle(cornerRadius: size * 0.225, style: .continuous))
+        } else {
+            DrawnFlame(progress: total > 0 ? Double(done) / Double(total) : 0)
+                .frame(width: size, height: size)
+        }
     }
+}
+
+/// Loads the flame logo once. In the bundled app it's `AppLogo.png`, staged into
+/// Resources by the Makefile; in the preview harness (cwd = repo root) it reads
+/// the source asset directly.
+enum BrandLogo {
+    static let image: NSImage? = {
+        if let url = Bundle.main.url(forResource: "AppLogo", withExtension: "png"),
+           let img = NSImage(contentsOf: url) {
+            return img
+        }
+        return NSImage(contentsOfFile: "Support/Brand/AppIcon-master.png")
+    }()
+}
+
+/// The programmatic flame — now only a fallback for the preview harness.
+private struct DrawnFlame: View {
+    var progress: Double
+    private var flameColor: Color { progress > 0 ? Theme.accent : Theme.inkFaint }
 
     var body: some View {
         Canvas { ctx, canvas in
             let rect = CGRect(origin: .zero, size: canvas)
             let path = FlameShape().path(in: rect)
-
-            // Faint full flame behind, so the silhouette always reads.
             ctx.fill(path, with: .color(Theme.emptyCell))
-
             if progress > 0 {
                 var clipped = ctx
                 clipped.clip(to: path)
@@ -80,10 +109,8 @@ struct WindowFlame: View {
                     endPoint: CGPoint(x: 0, y: 0)
                 ))
             }
-
             ctx.stroke(path, with: .color(flameColor.opacity(0.9)), lineWidth: 1.4)
         }
-        .frame(width: size, height: size)
     }
 }
 

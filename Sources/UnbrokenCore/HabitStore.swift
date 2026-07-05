@@ -226,6 +226,19 @@ public final class HabitStore {
         Calendar.current.startOfDay(for: settings.logicalDay(containing: asOf))
     }
 
+    /// Current & best streak of days where the user cleared their Today's 3 —
+    /// the focus list is a habit in its own right.
+    public func focusStats(asOf: Date = .now) -> StreakStats {
+        FocusStreakCalculator.stats(focus: focus, asOf: asOf, settings: settings)
+    }
+
+    /// Whether today's focus list is cleared (≥1 task written, all done).
+    public func focusClearedToday(asOf: Date = .now) -> Bool {
+        let items = focusItems(asOf: asOf)
+        let written = items.filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        return !written.isEmpty && written.allSatisfy { $0.done }
+    }
+
     // MARK: Derived
 
     public func stats(for habit: Habit, asOf: Date = .now) -> StreakStats {
