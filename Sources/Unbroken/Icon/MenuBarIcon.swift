@@ -183,47 +183,61 @@ public enum MenuBarIcon {
 
     // MARK: - Helpers
 
-    /// A stylized fire within ``flameRect`` (y-up: base low, tip high).
+    /// The flame silhouette within ``flameRect`` (y-up: base low, tip high).
     ///
-    /// The silhouette is deliberately flame-shaped, not a teardrop: the tip
-    /// hooks over to the right like a licking tongue, the right flank bulges out
-    /// low, and the left flank carries a pronounced concave notch — the "lick" —
-    /// so it reads as fire, not a water drop, even as a flat 18pt monochrome
-    /// glyph. A small kick at the base keeps the bottom from reading as a round
-    /// droplet.
+    /// These points are traced directly from the app-icon flame
+    /// (`Support/Brand/AppIcon-flame-imagegen.png`) so the menu-bar glyph is the
+    /// *same* flame as the logo — the leaning, curled-over tip, the concave
+    /// "lick" on the left flank, and the rounded body — just rendered as a
+    /// monochrome template that tints to the bar and fills by state. (The bar
+    /// can't show the colour logo itself: menu-bar glyphs must be monochrome
+    /// templates that invert for light/dark and at 18pt a colour squircle would
+    /// be an illegible blob.) Regenerate with `Tools/trace-flame.py`.
+    private static let flameSilhouette: [(CGFloat, CGFloat)] = [
+        (0.6552, 1.0000), (0.7069, 1.0000), (0.6552, 0.8995), (0.6552, 0.8148),
+        (0.6724, 0.7831), (0.9052, 0.5714), (1.0000, 0.4074), (1.0000, 0.2698),
+        (0.9655, 0.2011), (0.8879, 0.1217), (0.7672, 0.0529), (0.6293, 0.0106),
+        (0.5603, 0.0000), (0.3879, 0.0053), (0.2414, 0.0423), (0.0948, 0.1217),
+        (0.0172, 0.2063), (0.0000, 0.2487), (0.0000, 0.3810), (0.0431, 0.4603),
+        (0.1034, 0.5238), (0.1983, 0.5873), (0.2241, 0.5767), (0.2241, 0.5185),
+        (0.2586, 0.4921), (0.3017, 0.4974), (0.3276, 0.5238), (0.3362, 0.6085),
+        (0.3103, 0.6667), (0.3103, 0.7513), (0.3793, 0.8571), (0.5000, 0.9418),
+        (0.6466, 0.9947),
+    ]
+
     private static func flamePath() -> NSBezierPath {
         let r = flameRect
-        func px(_ fx: CGFloat) -> CGFloat { r.minX + fx * r.width }
-        func py(_ fy: CGFloat) -> CGFloat { r.minY + fy * r.height }
+        func map(_ n: (CGFloat, CGFloat)) -> CGPoint {
+            CGPoint(x: r.minX + n.0 * r.width, y: r.minY + n.1 * r.height)
+        }
+        func lerp(_ a: CGPoint, _ b: CGPoint, _ t: CGFloat) -> CGPoint {
+            CGPoint(x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t)
+        }
+        func mid(_ a: CGPoint, _ b: CGPoint) -> CGPoint {
+            CGPoint(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2)
+        }
 
-        let p = NSBezierPath()
-        // Tip: a SHARP point, leaning right — the single strongest "fire" cue.
-        // The two curves meeting here approach from opposite sides so the join is
-        // a cusp (a point), not a rounded dome like a water drop.
-        p.move(to: CGPoint(x: px(0.58), y: py(1.0)))
-        // Right flank: bulge out to the widest point, low on the body.
-        p.curve(to: CGPoint(x: px(0.86), y: py(0.30)),
-                controlPoint1: CGPoint(x: px(0.64), y: py(0.86)),
-                controlPoint2: CGPoint(x: px(0.93), y: py(0.56)))
-        // Round the base from the right to center-bottom.
-        p.curve(to: CGPoint(x: px(0.48), y: py(0.0)),
-                controlPoint1: CGPoint(x: px(0.82), y: py(0.07)),
-                controlPoint2: CGPoint(x: px(0.66), y: py(0.0)))
-        // Base to the lower-left shoulder.
-        p.curve(to: CGPoint(x: px(0.13), y: py(0.32)),
-                controlPoint1: CGPoint(x: px(0.30), y: py(0.0)),
-                controlPoint2: CGPoint(x: px(0.09), y: py(0.10)))
-        // THE LICK: the left flank scoops inward (concave) — the classic flame
-        // notch that a teardrop never has.
-        p.curve(to: CGPoint(x: px(0.46), y: py(0.52)),
-                controlPoint1: CGPoint(x: px(0.19), y: py(0.46)),
-                controlPoint2: CGPoint(x: px(0.45), y: py(0.39)))
-        // Up from the notch, curling to the sharp leaning tip.
-        p.curve(to: CGPoint(x: px(0.58), y: py(1.0)),
-                controlPoint1: CGPoint(x: px(0.40), y: py(0.72)),
-                controlPoint2: CGPoint(x: px(0.40), y: py(0.92)))
-        p.close()
-        return p
+        let verts = flameSilhouette.map(map)
+        let n = verts.count
+        let path = NSBezierPath()
+        guard n > 2 else { return path }
+
+        // Smooth the traced polygon into a clean closed curve: the path runs
+        // through each edge's midpoint using the shared vertex as a quadratic
+        // control point (expressed as a cubic), so corners round gently and the
+        // silhouette stays crisp at any backing scale instead of faceting.
+        var start = mid(verts[n - 1], verts[0])
+        path.move(to: start)
+        for i in 0..<n {
+            let control = verts[i]
+            let end = mid(verts[i], verts[(i + 1) % n])
+            path.curve(to: end,
+                       controlPoint1: lerp(start, control, 2.0 / 3.0),
+                       controlPoint2: lerp(end, control, 2.0 / 3.0))
+            start = end
+        }
+        path.close()
+        return path
     }
 
     private static func accessibilityDescription(for state: IconState) -> String {
